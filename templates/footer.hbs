@@ -1,7 +1,7 @@
 <footer class="footer">
   <div class="footer-inner">
-    {{#link 'help_center'}}{{help_center.name}}{{/link}}
-
+		<a href="https://Paf.ee">Paf.ee</a>
+  	{{dc 'opening_hours'}}
     <div class="footer-language-selector">
       {{#if alternative_locales}}
         <div class="dropdown language-selector">
@@ -23,3 +23,85 @@
     </div>
   </div>
 </footer>
+
+<!-- Start of paf-ee Zendesk Widget script -->
+<script type="text/javascript">
+const fetchTokenAndInvokeCallback = (callback) => {
+  let shouldInvokeCallback = true; // Flag to control callback invocation
+
+  const getToken = async () => {
+    const storageKey = 'jwtToken';
+    const tokenExpiryKey = 'tokenExpiry';
+
+    const getTokenFromServer = async () => {
+      const response = await fetch('https://www.paf.ee/api/zendesk-token', {
+        mode: 'cors',
+        method: 'GET',
+        headers: {
+          accept: 'application/json',
+        },
+        cache: 'no-cache',
+        credentials: 'include',
+        referrerPolicy: 'strict-origin-when-cross-origin',
+      });
+
+      if (!response.ok) {
+        shouldInvokeCallback = false;
+        throw new Error('Network response was not ok');
+      }
+		
+      const data = await response.json();
+      return data.token;
+    };
+
+    const isTokenExpired = () => {
+      const expiry = localStorage.getItem(tokenExpiryKey);
+      if (!expiry) {return true;}
+
+      const expiryDate = new Date(expiry);
+      return new Date() >= expiryDate;
+    };
+
+    const setTokenWithExpiry = (token) => {
+      const now = new Date();
+      const expiryDate = new Date(now.getTime() + 6 * 60000); // 6 minutes from now
+      localStorage.setItem(storageKey, token);
+      localStorage.setItem(tokenExpiryKey, expiryDate.toISOString());
+    };
+
+    if (isTokenExpired()) {
+      try {
+        const token = await getTokenFromServer();
+        setTokenWithExpiry(token);
+        if (shouldInvokeCallback) {callback(token);}
+      } catch (error) {
+       	callback(' ');
+      }
+    } else {
+      const token = localStorage.getItem(storageKey);
+      if (token && shouldInvokeCallback) {callback(token);}
+    }
+  };
+
+  getToken();
+};
+
+  window.zESettings = {
+            webWidget: {
+  						chat: {
+  							departments: {
+                  enabled: ['CST Estonia'],
+                  select: 'CST Estonia'
+  							}
+  						},
+              authenticate: {
+                chat: {
+                 jwtFn: function(callback){
+  										fetchTokenAndInvokeCallback(callback)
+  								}
+								}
+            	} 
+          	}
+        	};  
+ 
+</script>
